@@ -1,0 +1,53 @@
+# vim:sw=2:et:
+sudo: false
+
+language: generic
+
+addons:
+  apt:
+    packages:
+      - unixodbc
+      - unixodbc-dev
+      - libwxgtk2.8-dev
+
+env:
+  - OTP_TAG_NAME=OTP-20.0
+  - OTP_TAG_NAME=OTP-19.3.6
+  - OTP_TAG_NAME=OTP-19.2
+
+before_script:
+  # The checkout made by Travis is a "detached HEAD" and branches
+  # information is missing. Our Erlang.mk's git_rmq fetch method relies
+  # on it, so we need to restore it.
+  #
+  # We simply fetch master and, if it exists, stable branches. A branch
+  # is created, pointing to the detached HEAD.
+  - |
+    git checkout -B "${TRAVIS_TAG:-${TRAVIS_BRANCH}}"
+    git remote add upstream https://github.com/$TRAVIS_REPO_SLUG.git
+    git fetch upstream stable:stable || :
+    git fetch upstream master:master || :
+  # Install kerl; build gmake 4.2.1 and OTP
+  - $TRAVIS_BUILD_DIR/.travis.sh $OTP_TAG_NAME
+  - export PATH="$HOME/bin:$HOME/gmake/bin:$PATH"
+  - source "$HOME/otp/$OTP_TAG_NAME/activate"
+  - kerl active
+  - test -s "$HOME/.kiex/scripts/kiex" && source "$HOME/.kiex/scripts/kiex"
+  - kiex selfupdate
+  - test -x "$HOME/.kiex/elixirs/elixir-1.4.5/bin/elixir" || kiex install 1.4.5
+  - kiex use 1.4.5 --default
+  - mix local.hex --force
+  - make --version
+
+script:
+  - make tests
+
+before_cache:
+  - $TRAVIS_BUILD_DIR/.travis.sh kiex_cleanup
+
+cache:
+  directories:
+    - "$HOME/otp"
+    - "$HOME/.kiex"
+    - "$HOME/gmake"
+    - "$HOME/bin"

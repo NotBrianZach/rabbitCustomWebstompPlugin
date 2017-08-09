@@ -1,0 +1,7 @@
+{application,ranch_proxy_protocol,
+             [{description,"Ranch Proxy Protocol Transport"},
+              {vsn,"git"},
+              {registered,[]},
+              {applications,[kernel,stdlib,ranch]},
+              {env,[{proxy_protocol_timeout,55000},{ssl_accept_opts,[]}]},
+              {modules,[]}]}.

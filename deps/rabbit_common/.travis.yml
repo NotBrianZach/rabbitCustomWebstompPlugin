@@ -1,0 +1,35 @@
+# vim:sw=2:et:
+sudo: false
+
+language: erlang
+
+notifications:
+  email:
+    - alerts@rabbitmq.com
+
+otp_release:
+  - "19.2"
+  - "19.3"
+  - "20.0"
+
+before_script:
+  # The checkout made by Travis is a "detached HEAD" and branches
+  # information is missing. Our Erlang.mk's git_rmq fetch method relies
+  # on it, so we need to restore it.
+  #
+  # We simply fetch master and, if it exists, stable branches. A branch
+  # is created, pointing to the detached HEAD.
+  - |
+    git checkout -B "${TRAVIS_TAG:-${TRAVIS_BRANCH}}"
+    git remote add upstream https://github.com/$TRAVIS_REPO_SLUG.git
+    git fetch upstream stable:stable || :
+    git fetch upstream master:master || :
+  - kiex selfupdate
+  - test -x ~/.kiex/elixirs/elixir-1.4.5/bin/elixir || kiex install 1.4.5
+  - kiex default 1.4.5
+
+script: make tests
+
+cache:
+  directories:
+    - ~/.kiex/elixirs
